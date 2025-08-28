@@ -2,17 +2,34 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-T="${T:-$(nproc)}"          # threads
-P1B="${P1B:-300000}"        # Pollard p-1 bound per worker
-RRE="${RRE:-96}"            # rho restarts per worker
-CPUSET="${CPUSET:-}"        # e.g. "0-7" to pin
+T="${1:-$(nproc)}"
+P1B="${2:-500000}"
+RRE="${3:-96}"
+CPUSET="${4:-}"         # e.g. "0-7"
+LOG="${5:-cprime64.log}"
 
-log="cprime64_mt.log"
+echo "$(date -u +%FT%TZ) START loop64_mt T=$T p1_B=$P1B rho_restarts=$RRE cpuset='${CPUSET}'" | tee -a "$LOG"
 
 while :; do
   N="$(python3 gen64x64.py)"
-  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "$ts START T=$T P1B=$P1B RRE=$RRE N=$N" | tee -a "$log"
-  ./factor_mt.sh "$N" "$T" "$P1B" "$RRE" "$CPUSET" | tee -a "$log"
-  echo "$ts DONE" | tee -a "$log"
+  ts="$(date -u +%FT%TZ)"
+  echo "$ts NEW_N bits=$(python3 - <<PY
+n=int("$N"); print(n.bit_length())
+PY
+) N=$N" | tee -a "$LOG"
+
+  if [[ -n "$CPUSET" ]]; then
+    out="$(./factor_mt.sh "$N" "$T" "$P1B" "$RRE" "$CPUSET")"
+  else
+    out="$(./factor_mt.sh "$N" "$T" "$P1B" "$RRE")"
+  fi
+
+  echo "$out" | tee -a "$LOG"
+
+  # quick success/failure note
+  if echo "$out" | grep -q '"status":"ok"'; then
+    echo "$ts SUCCESS" | tee -a "$LOG"
+  else
+    echo "$ts NO_SUCCESS" | tee -a "$LOG"
+  fi
 done

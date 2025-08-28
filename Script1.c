@@ -4,6 +4,7 @@
 #include <string.h>
 
 /* ---------- Helpers ---------- */
+// Correct Luby (1-indexed): 1,1,2,1,1,2,4,1,1,2,1,1,2,4,8,...
 static uint64_t luby(unsigned i){
     unsigned k = 1;
     while (((1u<<k) - 1u) < i) k++;
@@ -11,10 +12,12 @@ static uint64_t luby(unsigned i){
     return luby(i - (1u<<(k-1)) + 1u);
 }
 
-/* prints budgets; stub for your real rho work */
+/* ---------- Mock attempt (prints budgets) ---------- */
 static int rho_try(unsigned seed, unsigned poly, unsigned long long budget, int verbose){
-    if (verbose) printf("rho_try(seed=%u, poly=%u, budget=%llu)\n", seed, poly, budget);
-    else         printf("%llu\n", budget);
+    if (verbose)
+        printf("rho_try(seed=%u, poly=%u, budget=%llu)\n", seed, poly, budget);
+    else
+        printf("%llu\n", budget);
     return 0;
 }
 
@@ -25,7 +28,7 @@ typedef struct {
     unsigned            restarts; // --rho_restarts
     schedule_t          schedule; // --schedule
     int                 verbose;  // --verbose
-    unsigned long long cap;      // --cap (ABSOLUTE budget cap)
+    unsigned long long  cap;      // --cap (absolute budget cap)
     int                 show_help;
 } opts_t;
 
@@ -69,7 +72,7 @@ int main(int argc, char** argv){
         }
         unsigned long long budget = opt.baseK * mult;
 
-        // ABSOLUTE cap: clamp budget directly to --cap, if provided.
+        // Absolute cap (clamp budget directly)
         if (opt.cap && budget > opt.cap) budget = opt.cap;
 
         if (rho_try(i,i,budget,opt.verbose)) { if(opt.verbose) puts("Factor found!"); break; }

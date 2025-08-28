@@ -1,0 +1,24 @@
+# build
+cprime
+*.o
+*.a
+*.so
+*.dSYM/
+*.exe
+
+# run logs / outputs
+runs/
+logs/
+*.log
+*.pid
+/tmp/
+cprime64.log
+/tmp/cprime64.loop.out
+/tmp/cprime64.pid
+
+# editors / py cache
+*.swp
+.vscode/
+.idea/
+__pycache__/
+*.pyc

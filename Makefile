@@ -1,15 +1,12 @@
-# Simple Makefile for cprime_cli_demo + tests
+CC=gcc
+CFLAGS=-O3 -march=x86-64 -mtune=generic -pipe
+LDLIBS=-lm
 
-CC      = cc
-CFLAGS  = -O3 -march=native -Wall -Wextra -pipe
+all: cprime_rho
 
-all: cprime_cli_demo
-
-cprime_cli_demo: Script1.c
-	$(CC) $(CFLAGS) Script1.c -o cprime_cli_demo
-
-test: cprime_cli_demo smoketest_fast.sh
-	./smoketest_fast.sh
+cprime_rho: cprime_rho.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 clean:
-	rm -f cprime_cli_demo Script1.o
+	rm -f cprime_rho *.o
+.PHONY: all clean

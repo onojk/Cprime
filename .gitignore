@@ -22,3 +22,4 @@ cprime64.log
 .idea/
 __pycache__/
 *.pyc
+cprime_rho

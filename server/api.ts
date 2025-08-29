@@ -7,6 +7,8 @@ import { factorQuick } from './cprime';
 
 const app = express();
 app.use(cors());
+
+// text input (allow plain, octet-stream, or anything)
 const textBody = express.text({ type: ['text/plain','application/octet-stream','*/*'], limit: '5mb' });
 const upload   = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -50,7 +52,7 @@ app.post('/api/normalize-file', upload.single('file'), (req, res) => {
   }
 });
 
-// single quick shot
+// Single quick shot (JSON body); returns wrapper with {ok:true,...}
 app.post('/api/factor-quick', express.json(), (req, res) => {
   try {
     const { n, timeout_ms, p1_B, rho_restarts } = req.body || {};
@@ -61,62 +63,28 @@ app.post('/api/factor-quick', express.json(), (req, res) => {
       p1_B: p1_B ?? 600000,
       rho_restarts: rho_restarts ?? 128,
     });
-    return res.json({ ok:true, ...out });
+    return res.json({ ok: true, ...out });
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: e.message || 'factor failed' });
   }
 });
 
-// lotto wrapper: keep trying until budget is used or factors found
-app.post('/api/lotto128_factor', express.json(), async (req, res) => {
+// === Classic GET shim expected by the UI (/api/factor?n=...) ===
+// Returns the inner cprime JSON (bits, classification, factors, n_str, status:"ok", ...)
+app.get('/api/factor', (req, res) => {
   try {
-    const { n } = req.body || {};
-    let { budget_ms, per_try_ms, rho_restarts } = req.body || {};
+    const n = String(req.query.n ?? '');
     if (!n) return res.status(400).json({ ok:false, error:'missing n' });
+    const timeout_ms   = Number(req.query.timeout_ms ?? 4000);
+    const p1_B         = Number(req.query.p1_B ?? 600000);
+    const rho_restarts = Number(req.query.rho_restarts ?? 128);
 
-    budget_ms     = Math.max(1000, Number(budget_ms ?? 15000));
-    per_try_ms    = Math.max(500,  Math.min(Number(per_try_ms ?? 2000), budget_ms));
-    rho_restarts  = Number(rho_restarts ?? 128);
-
-    const t0 = Date.now();
-    let tries = 0;
-
-    while (Date.now() - t0 < budget_ms) {
-      const out:any = factorQuick({
-        n: String(n),
-        timeout_ms: per_try_ms,
-        p1_B: 600000,
-        rho_restarts,
-      });
-      tries++;
-
-      // unify success detection across engines
-      let p:string|undefined, q:string|undefined;
-
-      // (a) cprime_cli_demo style JSON: {classification:'composite', factors:{ "p":1, "q":1 }, status:'ok'}
-      const j:any = out?.json ?? out; // some wrappers put JSON at top level
-      if (j && j.factors && typeof j.factors === 'object') {
-        const ks = Object.keys(j.factors).sort((a,b)=>BigInt(a)<BigInt(b)?-1:1);
-        if (ks.length >= 2) { p = ks[0]; q = ks[1]; }
-      }
-
-      // (b) legacy style: {found:true, p:'...', q:'...'}
-      if (!p && (j?.found === true) && j.p && j.q) { p = j.p; q = j.q; }
-
-      if (p && q) {
-        return res.json({
-          ok: true, engine: 'lotto-128', found: true,
-          n: String(n), p, q, tries_total: tries, elapsed_ms: Date.now() - t0
-        });
-      }
-    }
-
-    return res.json({
-      ok: true, engine: 'lotto-128', found: false,
-      n: String(n), tries_total: tries, elapsed_ms: Date.now() - t0
-    });
-  } catch (e:any) {
-    return res.status(500).json({ ok:false, error: e.message || 'lotto failed' });
+    const out = factorQuick({ n, timeout_ms, p1_B, rho_restarts });
+    // @ts-ignore prefer raw cprime JSON if present
+    if (out.json) return res.json(out.json);
+    return res.json(out);
+  } catch (e: any) {
+    return res.status(500).json({ ok:false, error: e.message || 'factor failed' });
   }
 });
 

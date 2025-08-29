@@ -23,3 +23,4 @@ cprime64.log
 __pycache__/
 *.pyc
 cprime_rho
+node_modules/

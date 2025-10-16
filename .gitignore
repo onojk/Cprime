@@ -23,3 +23,22 @@ cprime64.log
 __pycache__/
 *.pyc
 cprime_rho
+node_modules/
+# deps & build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# local binaries & logs
+cprime
+cprime_cli_demo
+cprime64.log
+runs/
+logs/
+tmp/
+*.pid
+/tmp/rsacrack-api.log
+
+# editor noise
+.DS_Store
+*.swp
